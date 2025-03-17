@@ -4,7 +4,7 @@ This application reads the key information (not key material) from CipherTrust a
 
 Usage:
 
-**python CM2Keys2CSV [-h] -host HOSTNAME [-port PORT] -user USERNAME -pass PASSWORD -out FILENAME [-KMIPOnly]** 
+**python CM2Keys2CSV [-h] -host HOSTNAME [-port PORT] -user USERNAME -pass PASSWORD -out FILENAME [-KMIPONLY]** 
 
 where:
 
@@ -18,5 +18,5 @@ PASSWORD  - Password corresponding to Username
 
 FILENAME  - Output file name for CSV data 
 
-[-KMIPOnly] - Boolean flagfor extracting ONLY KMIP key information.  Optional.  Without this flag, resulting file will NOT contain any vendor-specific KMIP extensions.
+[-KMIPONLY] - Boolean flagfor extracting ONLY KMIP key information.  Optional.  Without this flag, resulting file will NOT contain any vendor-specific KMIP extensions.
 
