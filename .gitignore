@@ -1,0 +1,5 @@
+*.vsidx
+/.vs/CMKeys2CSV/v17
+/.vs
+/__pycache__
+*.csv
