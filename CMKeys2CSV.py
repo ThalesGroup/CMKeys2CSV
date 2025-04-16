@@ -47,7 +47,7 @@ KMIPOnly = False
 if args.KMIPONLY:
     KMIPOnly = True
 
-tmpStr = " Host: %s\n Port: %s\n User: %s\n Output: %s\n" %(Host, Port, User, outFile)
+tmpStr = " Host: %s\n Port: %s\n User: %s\n Output: %s\n KMIPOnly?: %s" %(Host, Port, User, outFile, KMIPOnly)
 print(tmpStr)
 
 # ################################################################################
@@ -67,8 +67,10 @@ listofKeysDetailed  = getHostObjData(Host, Port, listOfKeys, authStr)
 listofNewKeys       = []
 isKMIPKey           = False
 
+# printJList("listofKeysDetailed:", listofKeysDetailed)
+
 # Manipulate the list detailed keys so that the KMIP:custom information is shared at the highest level
-# This makes for easier importation into aCSV file
+# This makes for easier importation into a CSV file
 
 for t_key in listofKeysDetailed:
     isKMIPKey = False
@@ -79,14 +81,14 @@ for t_key in listofKeysDetailed:
         if 'kmip' in  str(t_key['meta']):
             isKMIPKey = True
 
-            # If this is a KMIP Key, the following inforamtion is going to be helpful to retain
+            # If this is a KMIP Key, the following information is going to be helpful to retain
             if 'custom' in str(t_key['meta']['kmip']):
                 t_customDetails = t_key['meta']['kmip']['custom']
                 for t_detail in t_customDetails:
                     for t_kvk in t_detail.keys():
                         if t_kvk == 'type' or t_kvk == 'index':
                             continue
-                        print (t_kvk, t_detail[t_kvk])
+                        print ("KMIP Attribute found:", t_kvk, t_detail[t_kvk])
                         t_newKey[t_kvk] = t_detail[t_kvk]
 
             printJList("t_newKey", t_newKey)
