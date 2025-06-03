@@ -182,6 +182,42 @@ def getHostObjData(t_host, t_port, t_ObjList, t_authStr):
 
     return t_hostObjDataList
 
+# -----------------------------------------------------------------------------
+def deleteCMKey(t_cmHost, t_cmPort, t_keyID, t_authStr):
+    # REST Assembly for deleting key from CM
+    # -----------------------------------------------------------------------------
+    HTTPS_SUCCESS_NOCONTENT = 204
+    success = False
+
+    t_cmRESTAPI   = CM_REST_PREAMBLE + "vault/keys2/" + t_keyID
+
+    t_cmHostRESTCmd = "https://%s:%s%s" %(t_cmHost, t_cmPort, t_cmRESTAPI) 
+    t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":t_authStr}
+
+    # print(t_cmHostRESTCmd)
+    # print(t_hostHeaders)
+
+    response = requests.delete(t_cmHostRESTCmd, headers=t_hostHeaders, verify=False)
+
+    match response.status_code:
+        case 204: # Success
+            print(f" -> Key Successfully Deleted")
+            success = True
+
+        case 404: # Key Absent
+            print(f" Failed to delete key. Response Status Code : {response.status_code}")
+            print(f" -> Key Absent")
+
+        case 405: # Key Deletion flag not set
+            print(f" Failed to delete key. Response Status Code : {response.status_code}")
+            print(f" -> Check Deletion flag")
+
+        case _:
+            print(f" Failed to delete key. Response Status Code : {response.status_code}")
+            print(f" -> Check Key Settings")
+    
+    return success
+
 # -------------------------------------------------------------------
 def csvWriteFile(t_outFile, t_list):
 # -------------------------------------------------------------------    
@@ -211,3 +247,22 @@ def csvWriteFile(t_outFile, t_list):
     outFile.close()
     success = True
     return success
+
+# -------------------------------------------------------------------
+def readkeysFromFile(t_inFile):
+    #  Create a list of dictionaries, where each dictionary represents a row
+    #  in the CSV file and the keys are the header values.
+
+    import csv
+    import os.path
+
+    outList = []
+
+    # Check for the presence of the input file, and if present, then read
+    # the contents into a dictionary and return.
+    if os.path.exists(t_inFile) == True:
+        with open(t_inFile, 'r', newline='') as inFile:
+            t_reader = csv.DictReader(inFile)
+            for row in t_reader:
+                    outList.append(row)
+    return outList

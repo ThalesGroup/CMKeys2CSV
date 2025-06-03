@@ -2,8 +2,7 @@
 #
 # 	Name: CMKeys2CSV.py
 # 	Author: Rick R
-# 	Purpose:  Python-based Key List Extractor (but not key material)
-#   Usage: py cert-xtract.py -srcHost <hostname or IP> -srcUser <username> -srcPass <password>                     
+# 	Purpose:  Python-based Key List Data Extractor (but no key material)
 #                   
 #####################################################################################
 
