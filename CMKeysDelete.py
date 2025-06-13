@@ -62,7 +62,7 @@ for key in listOfKeys:
     success = deleteCMKey(Host, Port, t_keyID, authStr)
 
     if success:
-        deletedKeyCount =+ 1
+        deletedKeyCount = deletedKeyCount + 1
     
 print(f"\n{deletedKeyCount} out of {len(listOfKeys)} keys were deleted")
 
