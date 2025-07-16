@@ -56,22 +56,22 @@ print(tmpStr)
 # Get Source and Destination Authorization Token/Strings
 print("\n Accessing Source and collecting Authorization Strings...")
 
-authStr      = createCMAuthStr(Host, Port, User, Pass)
+authStr = createCMAuthStr(Host, Port, User, Pass)
 print("  * Host Access Confirmed *")
 tmpStr = "    Username: %s\n" %(User)
 print(tmpStr)
 
-listOfKeys          = getHostObjList(Host, Port, authStr)
-listofKeysDetailed  = getHostObjData(Host, Port, listOfKeys, authStr)
-listofNewKeys       = []
-isKMIPKey           = False
+listOfKeys      = getHostObjList(Host, Port, authStr)
+listofAllKeys   = getHostObjData(Host, Port, listOfKeys, authStr)
+listofKMIPKeys  = []
+isKMIPKey       = False
 
-# printJList("listofKeysDetailed:", listofKeysDetailed)
+# printJList("listofAllKeys:", listofAllKeys)
 
 # Manipulate the list detailed keys so that the KMIP:custom information is shared at the highest level
 # This makes for easier importation into a CSV file
 
-for t_key in listofKeysDetailed:
+for t_key in listofAllKeys:
     isKMIPKey = False
     t_newKey = t_key.copy()
 
@@ -87,20 +87,23 @@ for t_key in listofKeysDetailed:
                     for t_kvk in t_detail.keys():
                         if t_kvk == 'type' or t_kvk == 'index':
                             continue
-                        print ("KMIP Attribute found:", t_kvk, t_detail[t_kvk])
+                        # print ("KMIP Attribute found:", t_kvk, t_detail[t_kvk])
                         t_newKey[t_kvk] = t_detail[t_kvk]
 
-            printJList("t_newKey", t_newKey)
-            listofNewKeys.append(t_newKey)
+            # printJList("t_newKey:", t_newKey)
+            listofKMIPKeys.append(t_newKey)
 
 
 # The new list of keys will contain ONLY KMIP keys and will include all information at the same dictionary/JSON level.
+keyCount = 0
 if KMIPOnly:
-    csvWriteFile(outFile, listofNewKeys)
+    csvWriteFile(outFile, listofKMIPKeys)
+    keyCount = len(listOfKeys)
 else:
-    csvWriteFile(outFile, listofKeysDetailed)
+    csvWriteFile(outFile, listofAllKeys)
+    keyCount = len(listOfKeys)
 
-
+print(f"Meta data for {keyCount} keys has successfully been exported to {outFile}.")
 
 
 
