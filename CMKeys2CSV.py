@@ -10,6 +10,8 @@ import  argparse
 from    CMKeys2CSV_errors import *
 from    CMKeys2CSV_REST import *
 import  getpass
+import  copy
+import  pandas as pd # https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html
 
 # ---------------- Constants ----------------------------------------------------
 DEFAULT_SRC_PORT    = ["443"]
@@ -64,8 +66,9 @@ authStr = createCMAuthStr(Host, Port, User, Pass)
 print("  * Host Access Confirmed *")
 
 listOfKeys      = getHostObjList(Host, Port, authStr)
-listofAllKeys   = getHostObjData(Host, Port, listOfKeys, authStr)
+listofKeys      = getHostObjData(Host, Port, listOfKeys, authStr)
 listofKMIPKeys  = []
+listofAllKeys   = []
 isKMIPKey       = False
 
 # printJList("listofAllKeys:", listofAllKeys)
@@ -73,9 +76,9 @@ isKMIPKey       = False
 # Manipulate the list detailed keys so that the KMIP:custom information is shared at the highest level
 # This makes for easier importation into a CSV file
 
-for t_key in listofAllKeys:
+for t_key in listofKeys:
     isKMIPKey = False
-    t_newKey = t_key.copy()
+    t_newKey = copy.deepcopy(t_key)
 
     if 'meta' in str(t_key):
         del t_newKey['meta']
@@ -94,16 +97,19 @@ for t_key in listofAllKeys:
 
             # printJList("t_newKey:", t_newKey)
             listofKMIPKeys.append(t_newKey)
+    listofAllKeys.append(t_newKey)
 
 
 # The new list of keys will contain ONLY KMIP keys and will include all information at the same dictionary/JSON level.
 keyCount = 0
 if KMIPOnly:
-    csvWriteFile(outFile, listofKMIPKeys)
-    keyCount = len(listOfKeys)
+    output_df = pd.DataFrame(listofKMIPKeys)
+    output_df.to_csv(outFile, index=False)
+    keyCount = len(listofKMIPKeys)
 else:
-    csvWriteFile(outFile, listofAllKeys)
-    keyCount = len(listOfKeys)
+    output_df = pd.DataFrame(listofAllKeys)
+    output_df.to_csv(outFile, index=False)
+    keyCount = len(listofAllKeys)
 
 print(f"\nMeta data for {keyCount} keys has successfully been exported to: {outFile}.")
 
