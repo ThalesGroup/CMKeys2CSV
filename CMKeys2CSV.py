@@ -74,7 +74,7 @@ isKMIPKey       = False
 # Manipulate the list detailed keys so that the KMIP:custom information is shared at the highest level
 # This makes for easier importation into a CSV file
 
-print(f"\n  {len(listofKeyObjects)} Key Objects available.  {len(listofKeyDataObjects)} Key Data Objects available.  Parsing...")
+print(f"\nParsing {len(listofKeyObjects)} Key Objects and {len(listofKeyDataObjects)} Key Data Objects.")
 
 for t_key in listofKeyDataObjects:
     isKMIPKey = False
@@ -106,12 +106,14 @@ if KMIPOnly:
     output_df = pd.DataFrame(listofKMIPKeys)
     output_df.to_csv(outFile, index=False)
     keyCount = len(listofKMIPKeys)
+    print("\nOnly retrieving KMIP Keys")
 else:
     output_df = pd.DataFrame(listofAllKeys)
     output_df.to_csv(outFile, index=False)
     keyCount = len(listofAllKeys)
 
-print(f"\nMeta data for {keyCount} keys has successfully been exported to: {outFile}.")
+print(f"Meta data for {keyCount} keys have been exported to: {outFile}")
+
 
 
 
