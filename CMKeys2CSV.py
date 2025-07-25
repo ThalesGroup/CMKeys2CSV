@@ -65,18 +65,18 @@ print("\n Accessing Source and collecting Authorization Strings...")
 authStr = createCMAuthStr(Host, Port, User, Pass)
 print("  * Host Access Confirmed *")
 
-listOfKeys      = getHostObjList(Host, Port, authStr)
-listofKeys      = getHostObjData(Host, Port, listOfKeys, authStr)
+listofKeyObjects      = getHostObjList(Host, Port, authStr)
+listofKeyDataObjects      = getHostObjData(Host, Port, listofKeyObjects, authStr)
 listofKMIPKeys  = []
 listofAllKeys   = []
 isKMIPKey       = False
 
-# printJList("listofAllKeys:", listofAllKeys)
-
 # Manipulate the list detailed keys so that the KMIP:custom information is shared at the highest level
 # This makes for easier importation into a CSV file
 
-for t_key in listofKeys:
+print(f"\n  {len(listofKeyObjects)} Key Objects available.  {len(listofKeyDataObjects)} Key Data Objects available.  Parsing...")
+
+for t_key in listofKeyDataObjects:
     isKMIPKey = False
     t_newKey = copy.deepcopy(t_key)
 
