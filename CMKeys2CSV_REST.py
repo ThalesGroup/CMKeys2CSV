@@ -10,6 +10,7 @@ import  json
 import  inspect
 from    CMKeys2CSV_errors import *
 from    CMKeys2CSV_enums import *
+from    datetime import datetime
 
 
 # ---------------- CONSTANTS -----------------------------------------------------
@@ -51,7 +52,6 @@ def createCMAuthStr(t_cmHost, t_cmPort, t_cmUser, t_cmPass):
     t_cmHeaders            = {"Content-Type":APP_JSON}
     t_cmBody               = {"name":t_cmUser, "password":t_cmPass}
 
-
     # Suppress SSL Verification Warnings
     requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
@@ -67,8 +67,9 @@ def createCMAuthStr(t_cmHost, t_cmPort, t_cmUser, t_cmPass):
     # Extract the Bearer Token from the value of the key-value pair of the JSON reponse which is identified by the 'jwt' key.
     t_cmUserBearerToken            = r.json()['jwt']
     t_cmAuthStr                    = "Bearer "+t_cmUserBearerToken
+    t_dstAuthStrBornOn              = datetime.now() # add bearer birthday to be able to track when it will expire (300 seconds later)
 
-    return t_cmAuthStr
+    return t_cmAuthStr, t_dstAuthStrBornOn
 
 def getHostObjList(t_host, t_port, t_authStr):
 # -----------------------------------------------------------------------------
@@ -139,7 +140,7 @@ def getHostObjList(t_host, t_port, t_authStr):
     # print("\n         host Objects: ",  t_hostFinalObjList[0].keys())
     return t_hostFinalObjList
 
-def getHostObjData(t_host, t_port, t_ObjList, t_authStr):
+def getHostObjData(t_host, t_port, t_ObjList, t_user, t_pass):
 # -----------------------------------------------------------------------------
 # REST Assembly for obtaining specific Object Data from CipherTrust
 #
@@ -152,6 +153,8 @@ def getHostObjData(t_host, t_port, t_ObjList, t_authStr):
     t_hostObjDataList       = [] # created list to be returned later
     t_ObjCnt                = 0  # Initialize counter
     t_ListLen               = len(t_ObjList)
+
+    t_authStr, t_authBornOn = createCMAuthStr(t_host, t_port, t_user, t_pass)
     
     for obj in range(t_ListLen):
         hostObjID    = t_ObjList[obj][CMAttributeType.ID.value]
@@ -176,9 +179,13 @@ def getHostObjData(t_host, t_port, t_ObjList, t_authStr):
 
         t_data      = r.json()        
         t_hostObjDataList.append(t_data)  #Add data to te list
-        
        
         t_ObjCnt += 1
+
+        # Check to see if auth string needs to be refreshed
+        if isAuthStrRefreshNeeded(t_authBornOn):
+            t_authStr, t_authBornOn = createCMAuthStr(t_host, t_port, t_user, t_pass) # refresh
+            print(f"  --> Host Authorization Token Refreshed.  {t_ObjCnt} of {t_ListLen} Key Data Objects processed so far...")
 
     return t_hostObjDataList
 
@@ -266,3 +273,21 @@ def readkeysFromFile(t_inFile):
             for row in t_reader:
                     outList.append(row)
     return outList
+
+def isAuthStrRefreshNeeded(t_bornOn):
+# ----------------------------------------------------------------------------------
+# The DST Bearer token / Auth token will expire after 300 seconds on CM.  
+# Include this check before you use the Auth token check its age.
+# ----------------------------------------------------------------------------------
+    result = False # default
+    t_currentTime = datetime.now()
+    t_timeDiff = t_currentTime - t_bornOn
+    time_diff_secs = t_timeDiff.total_seconds()
+
+    # print("Time Diff:", time_diff_secs)
+
+    if time_diff_secs > 275: # something lower than 300
+        # print("Auth String Refresh Needed")
+        result = True
+
+    return result

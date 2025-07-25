@@ -62,19 +62,21 @@ print(tmpStr)
 # Get Source and Destination Authorization Token/Strings
 print("\n Accessing Source and collecting Authorization Strings...")
 
-authStr = createCMAuthStr(Host, Port, User, Pass)
+authStr, authStrBornOn = createCMAuthStr(Host, Port, User, Pass)
 print("  * Host Access Confirmed *")
 
+print("\n  -> Retrieving List Key Objects from CipherTrust...")
 listofKeyObjects      = getHostObjList(Host, Port, authStr)
-listofKeyDataObjects      = getHostObjData(Host, Port, listofKeyObjects, authStr)
+
+print(f"  -> Retrieving {len(listofKeyObjects)} Key Data Objects from CipherTrust...")
+listofKeyDataObjects  = getHostObjData(Host, Port, listofKeyObjects, User, Pass)
 listofKMIPKeys  = []
 listofAllKeys   = []
 isKMIPKey       = False
 
 # Manipulate the list detailed keys so that the KMIP:custom information is shared at the highest level
 # This makes for easier importation into a CSV file
-
-print(f"\nParsing {len(listofKeyObjects)} Key Objects and {len(listofKeyDataObjects)} Key Data Objects.")
+print(f"\n  -> Key Data Objects Retrieval Complete.  Parsing {len(listofKeyDataObjects)} Key Data Objects...")
 
 for t_key in listofKeyDataObjects:
     isKMIPKey = False
