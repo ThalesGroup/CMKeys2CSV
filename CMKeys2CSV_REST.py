@@ -208,20 +208,20 @@ def deleteCMKey(t_cmHost, t_cmPort, t_keyID, t_authStr):
 
     match response.status_code:
         case 204: # Success
-            print(f" -> Key Successfully Deleted")
+            print(f" -> Key Successfully Deleted!")
             success = True
 
         case 404: # Key Absent
-            print(f" Failed to delete key. Response Status Code : {response.status_code}")
-            print(f" -> Key Absent")
+            print(f" -> Failed to delete key. Response Status Code : {response.status_code}")
+            print(f"  -> Key Absent")
 
         case 405: # Key Deletion flag not set
-            print(f" Failed to delete key. Response Status Code : {response.status_code}")
-            print(f" -> Check Deletion flag")
+            print(f" -> Failed to delete key. Response Status Code : {response.status_code}")
+            print(f"  -> Check Deletion flag - Deletion Flag for this key is not set")
 
         case _:
-            print(f" Failed to delete key. Response Status Code : {response.status_code}")
-            print(f" -> Check Key Settings")
+            print(f" -> Failed to delete key. Response Status Code : {response.status_code}")
+            print(f"  -> Check Key Settings")
     
     return success
 
@@ -286,7 +286,7 @@ def isAuthStrRefreshNeeded(t_bornOn):
 
     # print("Time Diff:", time_diff_secs)
 
-    if time_diff_secs > 275: # something lower than 300
+    if time_diff_secs > 275: # using 275 - choose something below 300
         # print("Auth String Refresh Needed")
         result = True
 

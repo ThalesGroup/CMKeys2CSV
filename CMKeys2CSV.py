@@ -114,7 +114,7 @@ else:
     output_df.to_csv(outFile, index=False)
     keyCount = len(listofAllKeys)
 
-print(f"Meta data for {keyCount} keys have been exported to: {outFile}")
+print(f"\nMeta data for {keyCount} keys has been exported to: {outFile}")
 
 
 
