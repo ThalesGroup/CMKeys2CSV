@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd certificate authority and certificate export functionality\n\n- Added support for retrieving both external and local CA data objects\n- Implemented certificate retrieval for local CAs with pagination support\n- Added new output file for certificate and CA data \\(Cert_Output.csv\\)\n- Added default values for host, user, pass, and output file parameters\n- Fixed typo in comment: \"Cllecting\" -> \"Collecting\"\n- Integrated auth string refresh in certificate retrieval loop\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)"
+    ]
+  }
+}
