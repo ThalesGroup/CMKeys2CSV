@@ -146,28 +146,20 @@ for ca in caListofCAObjects:
 caCount = len(listofAllCAs)
 print(f"  -> A total of {caCount} Certificate Authority Data Objects have been retrieved from CipherTrust...")
 
-# Saving CA Data to CSV
-output_df = pd.DataFrame(listofAllCAs)
-output_df.to_csv(certandCAOutFile, mode = 'w', index=False, header=True)
-
-print(f"  -> {caCount} CA Certificates have been saved")
-print("")
-
 
 caListofCertificateDataObjects  = getHostCertificateData(Host, Port, caListofCAObjects, User, Pass)
 certCount = len(caListofCertificateDataObjects)
 print(f"  -> Retrieved {certCount} Local CA Certificate Data Objects for {caCount} Local CA(s) from CipherTrust...")
 
-output_df = pd.DataFrame(caListofCertificateDataObjects)
-output_df.to_csv(certandCAOutFile, mode = 'a', index=False, header=True)
-
-print(f"  -> {caCount} CA Certificates have been saved")
-print("")
+for cert in caListofCertificateDataObjects:
+    cert['CAType'] = 'Local'
+    listofAllCertificates.append(cert)
 
 # print (json.dumps(listofAllCertificates, indent=4))
 
-
-
+combinedList = listofAllCAs + listofAllCertificates
+output_df = pd.DataFrame(combinedList)
+output_df.to_csv(certandCAOutFile, mode = 'w', index=False, header=True)
 
 print("\n --- Certificate Authority Retrieval Complete ---")
 
