@@ -14,7 +14,11 @@ import  copy
 import  pandas as pd # https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html
 
 # ---------------- Constants ----------------------------------------------------
-DEFAULT_SRC_PORT    = ["443"]
+DEFAULT_SRC_PORT   = ["443"]
+DEFAULT_HOST       = ["cm-kirk.test256.io"]
+DEFAULT_USER       = ["admin"]
+DEFAULT_PASS       = ["em50-UAV2000"]
+DEFAULT_OUTFILE    = ["ricktest.csv"]
 
 # ################################################################################
 
@@ -25,11 +29,11 @@ DEFAULT_SRC_PORT    = ["443"]
 parser = argparse.ArgumentParser(prog="CMKeys2CSV.py", description="REST-based Key List Extractor for CipherTrust Manager")
 
 # Src Information
-parser.add_argument("-host", nargs=1, action="store", dest="Host", required=True, help="IP address or FQDN of CipherTrust")
+parser.add_argument("-host", nargs=1, action="store", dest="Host", default=DEFAULT_HOST, help="IP address or FQDN of CipherTrust")
 parser.add_argument("-port", nargs=1, action="store", dest="Port", default=DEFAULT_SRC_PORT, help="Listen port on CipherTrust.  Default is 443")
-parser.add_argument("-user", nargs=1, action="store", dest="User", required=True, help="CipherTrust Username")
-parser.add_argument("-pass", nargs=1, action="store", dest="Pass", required=False, default = "", help="CipherTrust Password")
-parser.add_argument("-out",  nargs=1, action="store", dest="outFile", required=True, help="FIlename for CSV output file")
+parser.add_argument("-user", nargs=1, action="store", dest="User", default=DEFAULT_USER, help="CipherTrust Username")
+parser.add_argument("-pass", nargs=1, action="store", dest="Pass", default=DEFAULT_PASS, help="CipherTrust Password")
+parser.add_argument("-out",  nargs=1, action="store", dest="outFile", default=DEFAULT_OUTFILE, help="Filename for CSV output file for keys")
 parser.add_argument("-KMIPONLY", action=argparse.BooleanOptionalAction, required=False, type=bool, help="Optional flag to retriving only KMIP Key Info")
 
 # Args are returned as a LIST.  Separate them into individual strings
@@ -40,6 +44,7 @@ Port = str(" ".join(args.Port))
 User = str(" ".join(args.User))
 Pass = str(" ".join(args.Pass))
 outFile = str(" ".join(args.outFile))
+certandCAOutFile = "Cert_Output.csv"
 
 # If password was not entered as a parameter, prompt the user for it.
 if len(Pass) < 1:
@@ -53,6 +58,8 @@ if args.KMIPONLY:
 # Display results from inputs
 print("\n ---- CIPHERTRUST PARAMETERS ----")
 tmpStr = " Host: %s\n Port: %s\n User: %s\n Output: %s\n KMIPOnly?: %s" %(Host, Port, User, outFile, KMIPOnly)
+if len(certandCAOutFile) > 0:
+    tmpStr += f"\n Certificate output: {certandCAOutFile}"
 print(tmpStr)
 
 # ################################################################################
@@ -115,6 +122,55 @@ else:
     keyCount = len(listofAllKeys)
 
 print(f"\nMeta data for {keyCount} keys has been exported to: {outFile}")
+
+# ################################################################################
+print("\n --- Starting Certificate Authority Retrieval ---")
+# ################################################################################
+listofAllCAs = []
+listofAllCertificates = []
+
+caListofCAObjects      = getHostExternalCAList(Host, Port, authStr)
+print(f"  -> Retrieved {len(caListofCAObjects)} External CA Data Objects from CipherTrust...")
+# print (json.dumps(caListofCAObjects, indent=4))
+for ca in caListofCAObjects:
+    ca['CAType'] = 'External'
+    listofAllCAs.append(ca)
+
+caListofCAObjects      = getHostLocalCAList(Host, Port, authStr)
+print(f"  -> Retrieved {len(caListofCAObjects)} Local CA Data Objects from CipherTrust...")
+# print (json.dumps(caListofCAObjects, indent=4))
+for ca in caListofCAObjects:
+    ca['CAType'] = 'Local'
+    listofAllCAs.append(ca)
+
+caCount = len(listofAllCAs)
+print(f"  -> A total of {caCount} Certificate Authority Data Objects have been retrieved from CipherTrust...")
+
+# Saving CA Data to CSV
+output_df = pd.DataFrame(listofAllCAs)
+output_df.to_csv(certandCAOutFile, mode = 'w', index=False, header=True)
+
+print(f"  -> {caCount} CA Certificates have been saved")
+print("")
+
+
+caListofCertificateDataObjects  = getHostCertificateData(Host, Port, caListofCAObjects, User, Pass)
+certCount = len(caListofCertificateDataObjects)
+print(f"  -> Retrieved {certCount} Local CA Certificate Data Objects for {caCount} Local CA(s) from CipherTrust...")
+
+output_df = pd.DataFrame(caListofCertificateDataObjects)
+output_df.to_csv(certandCAOutFile, mode = 'a', index=False, header=True)
+
+print(f"  -> {caCount} CA Certificates have been saved")
+print("")
+
+# print (json.dumps(listofAllCertificates, indent=4))
+
+
+
+
+print("\n --- Certificate Authority Retrieval Complete ---")
+
 
 
 

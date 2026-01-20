@@ -73,7 +73,7 @@ def createCMAuthStr(t_cmHost, t_cmPort, t_cmUser, t_cmPass):
 
 def getHostObjList(t_host, t_port, t_authStr):
 # -----------------------------------------------------------------------------
-# REST Assembly for Cllecting More detailed Host Key Info
+# REST Assembly for Collecting More detailed Host Key Info
 # 
 # The objective of this section is to use the host Authorization / Bearer Token
 # to query the host's REST interface about keys.
@@ -291,3 +291,214 @@ def isAuthStrRefreshNeeded(t_bornOn):
         result = True
 
     return result
+
+
+def getHostLocalCAList(t_host, t_port, t_authStr):
+# -----------------------------------------------------------------------------
+# REST Assembly for Collecting More detailed Host Key Info
+# 
+# The objective of this section is to use the host Authorization / Bearer Token
+# to query the host's REST interface about keys.
+#
+# Note that the list returns only 500 keys per query.  As such, we are going to
+# define a batch limit and make multiple queries to the CipherTrust Server
+# -----------------------------------------------------------------------------
+
+    t_batchLimit            = 500   # 500 keys per retreival
+    t_batchSkip             = 0     # skip or offset into object count
+    t_batchObjSkip          = t_batchLimit * t_batchSkip
+    t_hostObjCnt            = 0
+
+    # Define a common header for all REST API Requests
+    t_hostHeaders            = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization": t_authStr}
+
+    # Process all keys per the size of the t_batchLimit until you have retrieved all of them.
+    # Although this is the initial batch, use the same command structure as if multiple batch calls
+    # may be required - for consistency.
+    t_hostRESTCAList    = "%sca/local-cas/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
+    t_hostRESTCmd        = "https://%s:%s%s" %(t_host, t_port, t_hostRESTCAList)   
+
+    # Note that this REST Command does not require a body object in this GET REST Command
+    r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
+
+    if(r.status_code != STATUS_CODE_OK):
+        t_module = inspect.currentframe().f_code.co_name
+
+        tmpStr = "%s: t_batchLimit:%s t_batchSkip:%s t_batchObSkip:%s" %(t_module, t_batchLimit, t_batchSkip, t_batchObjSkip)
+        print(tmpStr)
+        kPrintError(t_module + ":", r)
+        exit()
+
+    t_hostFinalObjList       = r.json()[CMAttributeType.RESOURCES.value]
+    t_hostObjCnt             = len(t_hostFinalObjList)
+    t_hostObjTotalCnt        = r.json()[CMAttributeType.TOTAL.value]
+
+    # After the initial retreival, we have access to the total number of objects.
+    # From there, determine, now many more iterations are requied.
+    while t_hostObjTotalCnt > t_hostObjCnt:
+        t_batchSkip             = t_batchSkip + 1               # iterate to next batch
+        t_batchObjSkip          = t_batchLimit * t_batchSkip    # calculate number of objects to skip
+
+        t_hostRESTCAList       = "%sca/local-cas/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
+        t_hostRESTCmd           = "https://%s:%s%s" %(t_host, t_port, t_hostRESTCAList)   
+
+        # Note that this REST Command does not require a body object in this GET REST Command
+        r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
+
+        if(r.status_code != STATUS_CODE_OK):
+            t_module = inspect.currentframe().f_code.co_name
+            tmpStr = "%s: t_hostObjTotalCnt:%s t_batchLimit:%s t_batchSkip:%s t_batchObjSkip:%s t_hostObjCnt:%s" %(t_module, t_hostObjTotalCnt, t_batchLimit, t_batchSkip, t_batchObjSkip, t_hostObjCnt)
+            print(tmpStr)
+            kPrintError(t_module + ":", r)
+            exit()
+
+        # Retreive the batch of objects
+        t_ObjList       = r.json()[CMAttributeType.RESOURCES.value]
+
+        # Add/extend the current batch to the total list (Final Obj List)
+        t_hostFinalObjList.extend(t_ObjList)
+        t_hostObjCnt = len(t_hostFinalObjList)
+
+    # print("\n         host CA Objects: ",  t_hostFinalObjList[0].keys())
+    return t_hostFinalObjList
+
+def getHostExternalCAList(t_host, t_port, t_authStr):
+# -----------------------------------------------------------------------------
+# REST Assembly for Collecting More detailed Host Key Info
+# 
+# The objective of this section is to use the host Authorization / Bearer Token
+# to query the host's REST interface about keys.
+#
+# Note that the list returns only 500 keys per query.  As such, we are going to
+# define a batch limit and make multiple queries to the CipherTrust Server
+# -----------------------------------------------------------------------------
+
+    t_batchLimit            = 500   # 500 keys per retreival
+    t_batchSkip             = 0     # skip or offset into object count
+    t_batchObjSkip          = t_batchLimit * t_batchSkip
+    t_hostObjCnt            = 0
+
+    # Define a common header for all REST API Requests
+    t_hostHeaders            = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization": t_authStr}
+
+    # Process all keys per the size of the t_batchLimit until you have retrieved all of them.
+    # Although this is the initial batch, use the same command structure as if multiple batch calls
+    # may be required - for consistency.
+    t_hostRESTCAList    = "%sca/external-cas/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
+    t_hostRESTCmd        = "https://%s:%s%s" %(t_host, t_port, t_hostRESTCAList)   
+
+    # Note that this REST Command does not require a body object in this GET REST Command
+    r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
+
+    if(r.status_code != STATUS_CODE_OK):
+        t_module = inspect.currentframe().f_code.co_name
+
+        tmpStr = "%s: t_batchLimit:%s t_batchSkip:%s t_batchObSkip:%s" %(t_module, t_batchLimit, t_batchSkip, t_batchObjSkip)
+        print(tmpStr)
+        kPrintError(t_module + ":", r)
+        exit()
+
+    t_hostFinalObjList       = r.json()[CMAttributeType.RESOURCES.value]
+    t_hostObjCnt             = len(t_hostFinalObjList)
+    t_hostObjTotalCnt        = r.json()[CMAttributeType.TOTAL.value]
+
+    # After the initial retreival, we have access to the total number of objects.
+    # From there, determine, now many more iterations are requied.
+    while t_hostObjTotalCnt > t_hostObjCnt:
+        t_batchSkip             = t_batchSkip + 1               # iterate to next batch
+        t_batchObjSkip          = t_batchLimit * t_batchSkip    # calculate number of objects to skip
+
+        t_hostRESTCAList       = "%sca/external-cas/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
+        t_hostRESTCmd           = "https://%s:%s%s" %(t_host, t_port, t_hostRESTCAList)   
+
+        # Note that this REST Command does not require a body object in this GET REST Command
+        r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
+
+        if(r.status_code != STATUS_CODE_OK):
+            t_module = inspect.currentframe().f_code.co_name
+            tmpStr = "%s: t_hostObjTotalCnt:%s t_batchLimit:%s t_batchSkip:%s t_batchObjSkip:%s t_hostObjCnt:%s" %(t_module, t_hostObjTotalCnt, t_batchLimit, t_batchSkip, t_batchObjSkip, t_hostObjCnt)
+            print(tmpStr)
+            kPrintError(t_module + ":", r)
+            exit()
+
+        # Retreive the batch of objects
+        t_ObjList       = r.json()[CMAttributeType.RESOURCES.value]
+
+        # Add/extend the current batch to the total list (Final Obj List)
+        t_hostFinalObjList.extend(t_ObjList)
+        t_hostObjCnt = len(t_hostFinalObjList)
+
+    # print("\n         host CA Objects: ",  t_hostFinalObjList[0].keys())
+    return t_hostFinalObjList
+
+def getHostCertificateData(t_host, t_port, t_ObjList, t_user, t_pass):
+# -----------------------------------------------------------------------------
+# REST Assembly for obtaining specific Object Data from CipherTrust
+#
+# Remember that the t_ObjList is a list of certificates organized by their issuing
+# Certificate Authorities (list of list).
+# -----------------------------------------------------------------------------
+
+    t_hostRESTAPI            = CM_REST_PREAMBLE + "ca/local-cas/"
+    t_ListLen               = len(t_ObjList) # list of CAs IDs
+
+    t_FinalCertList         = []
+    t_ObjCnt                = 0  # Initialize counter
+
+    t_authStr, t_authBornOn = createCMAuthStr(t_host, t_port, t_user, t_pass)
+    
+    for ca in range(t_ListLen):
+        t_batchLimit            = 10    # 10 certs per retreival
+        t_batchSkip             = 0     # skip or offset into object count
+        t_batchObjSkip          = t_batchLimit * t_batchSkip
+
+        hostCAID    = t_ObjList[ca][CMAttributeType.ID.value]
+
+        t_hostRESTCmd = "https://%s:%s%s/%s/certs?skip=%s&limit=%s" %(t_host, t_port, t_hostRESTAPI, hostCAID, t_batchObjSkip, t_batchLimit)
+        t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":t_authStr}
+
+        # Note that REST Command does not require a body object in this GET REST Command
+        r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
+
+        if(r.status_code != STATUS_CODE_OK):
+            t_module = inspect.currentframe().f_code.co_name
+            tmpStr = "%s: t_batchLimit:%s t_batchSkip:%s t_batchObSkip:%s" %(t_module, t_batchLimit, t_batchSkip, t_batchObjSkip)
+            print(tmpStr)            
+            kPrintError(t_module + ":", r)
+            exit()
+
+        t_FinalCertList     = r.json()[CMAttributeType.RESOURCES.value]
+        t_FinalCertListCnt  = len(t_FinalCertList)
+        t_TotalCACertCnt    = r.json()[CMAttributeType.TOTAL.value]
+
+        # After the initial retreival, we have access to the total number of objects.
+        # From there, determine, now many more iterations are requied.
+        while t_TotalCACertCnt > t_FinalCertListCnt:
+            t_batchSkip             = t_batchSkip + 1               # iterate to next batch
+            t_batchObjSkip          = t_batchLimit * t_batchSkip    # calculate number of objects to skip
+
+            t_hostRESTCmd = "https://%s:%s%s/%s/certs?skip=%s&limit=%s" %(t_host, t_port, t_hostRESTAPI, hostCAID, t_batchObjSkip, t_batchLimit)
+            t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":t_authStr}
+
+            # Note that REST Command does not require a body object in this GET REST Command
+            r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
+
+            if(r.status_code != STATUS_CODE_OK):
+                t_module = inspect.currentframe().f_code.co_name
+                tmpStr = "%s: t_batchLimit:%s t_batchSkip:%s t_batchObSkip:%s" %(t_module, t_batchLimit, t_batchSkip, t_batchObjSkip)
+                print(tmpStr)            
+                kPrintError(t_module + ":", r)
+                exit()
+
+            t_CertList = r.json()[CMAttributeType.RESOURCES.value]
+                
+            t_FinalCertList.extend(t_CertList)
+            t_FinalCertListCnt  = len(t_FinalCertList)
+            #print(f"  -> Retrieved a total of {t_FinalCertListCnt} certificates for CA {hostCAID} out of a total of {t_TotalCACertCnt}.")
+
+            # Check to see if auth string needs to be refreshed
+            if isAuthStrRefreshNeeded(t_authBornOn):
+                t_authStr, t_authBornOn = createCMAuthStr(t_host, t_port, t_user, t_pass) # refresh
+                print(f"  --> Host Authorization Token Refreshed.  {t_ObjCnt} of {t_ListLen} Certificate Data Objects processed so far...")
+
+    return t_FinalCertList
