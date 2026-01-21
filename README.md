@@ -4,7 +4,7 @@ This application reads the key information (not key material) from CipherTrust a
 
 Usage:
 
-**python CMKeys2CSV.py [-h] -host HOSTNAME [-port PORT] -user USERNAME -pass PASSWORD -out FILENAME [-KMIPONLY]** 
+**python CMKeys2CSV.py [-h] -host HOSTNAME [-port PORT] -user USERNAME -pass PASSWORD -out FILENAME [-KMIPONLY] [-certOut CERTFILENAME]** 
 
 where:
 
@@ -19,6 +19,8 @@ PASSWORD  - Password corresponding to Username
 FILENAME  - Output file name for CSV data 
 
 [-KMIPONLY] - Boolean flag for extracting ONLY KMIP key information.  Optional.  Without this flag, resulting file will NOT contain any vendor-specific KMIP extensions.
+
+[-certout CERTFILENAME] - Optional.  When this flag is declared and CERTFILENAME is provided, the application will collect all CAs (local and external) and certificates and save that information in a the CERTFILENAME in a csv format.  This is helpful when you want to see the issuer or expiration dates of all certificates.
 
 ----
 

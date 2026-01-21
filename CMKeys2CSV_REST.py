@@ -20,6 +20,14 @@ APP_JSON            = "application/json"
 
 CM_REST_PREAMBLE    = "/api/v1/"
 
+# ----------------- GLOBALS --------------------------------------------------------
+g_cmHost = None
+g_cmPort = None
+g_cmUser = None
+g_cmPass = None
+g_authStr = None
+g_authStrBornOn = None
+
 
 def makeHexStr(t_val):
 # -------------------------------------------------------------------------------
@@ -37,7 +45,7 @@ def printJList(t_str, t_jList):
 # -------------------------------------------------------------------------------    
     print("\n ", t_str, json.dumps(t_jList, skipkeys = True, allow_nan = True, indent = 3))
 
-def createCMAuthStr(t_cmHost, t_cmPort, t_cmUser, t_cmPass):
+def createCMAuthStr():
 # -----------------------------------------------------------------------------
 # REST Assembly for HOST LOGIN 
 # 
@@ -47,10 +55,10 @@ def createCMAuthStr(t_cmHost, t_cmPort, t_cmUser, t_cmPass):
 # -----------------------------------------------------------------------------
 
     t_cmRESTAPI            = CM_REST_PREAMBLE + "auth/tokens/"
-    t_cmHostRESTCmd        = "https://%s:%s%s" %(t_cmHost, t_cmPort, t_cmRESTAPI)  
+    t_cmHostRESTCmd        = "https://%s:%s%s" %(g_cmHost, g_cmPort, t_cmRESTAPI)  
 
     t_cmHeaders            = {"Content-Type":APP_JSON}
-    t_cmBody               = {"name":t_cmUser, "password":t_cmPass}
+    t_cmBody               = {"name":g_cmUser, "password":g_cmPass}
 
     # Suppress SSL Verification Warnings
     requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -71,7 +79,7 @@ def createCMAuthStr(t_cmHost, t_cmPort, t_cmUser, t_cmPass):
 
     return t_cmAuthStr, t_dstAuthStrBornOn
 
-def getHostObjList(t_host, t_port, t_authStr):
+def getHostObjList():
 # -----------------------------------------------------------------------------
 # REST Assembly for Collecting More detailed Host Key Info
 # 
@@ -87,14 +95,16 @@ def getHostObjList(t_host, t_port, t_authStr):
     t_batchObjSkip          = t_batchLimit * t_batchSkip
     t_hostObjCnt            = 0
 
+    g_authStr, g_authBornOn = createCMAuthStr()
+
     # Define a common header for all REST API Requests
-    t_hostHeaders            = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization": t_authStr}
+    t_hostHeaders            = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization": g_authStr}
 
     # Process all keys per the size of the t_batchLimit until you have retrieved all of them.
     # Although this is the initial batch, use the same command structure as if multiple batch calls
     # may be required - for consistency.
     t_hostRESTKeyList    = "%svault/keys2/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
-    t_hostRESTCmd        = "https://%s:%s%s" %(t_host, t_port, t_hostRESTKeyList)   
+    t_hostRESTCmd        = "https://%s:%s%s" %(g_cmHost, g_cmPort, t_hostRESTKeyList)   
 
     # Note that this REST Command does not require a body object in this GET REST Command
     r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -118,7 +128,7 @@ def getHostObjList(t_host, t_port, t_authStr):
         t_batchObjSkip          = t_batchLimit * t_batchSkip    # calculate number of objects to skip
 
         t_hostRESTKeyList       = "%svault/keys2/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
-        t_hostRESTCmd           = "https://%s:%s%s" %(t_host, t_port, t_hostRESTKeyList)   
+        t_hostRESTCmd           = "https://%s:%s%s" %(g_cmHost, g_cmPort, t_hostRESTKeyList)   
 
         # Note that this REST Command does not require a body object in this GET REST Command
         r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -136,11 +146,12 @@ def getHostObjList(t_host, t_port, t_authStr):
         # Add/extend the current batch to the total list (Final Obj List)
         t_hostFinalObjList.extend(t_ObjList)
         t_hostObjCnt = len(t_hostFinalObjList)
+        
 
     # print("\n         host Objects: ",  t_hostFinalObjList[0].keys())
     return t_hostFinalObjList
 
-def getHostObjData(t_host, t_port, t_ObjList, t_user, t_pass):
+def getHostObjData(t_ObjList):
 # -----------------------------------------------------------------------------
 # REST Assembly for obtaining specific Object Data from CipherTrust
 #
@@ -154,7 +165,7 @@ def getHostObjData(t_host, t_port, t_ObjList, t_user, t_pass):
     t_ObjCnt                = 0  # Initialize counter
     t_ListLen               = len(t_ObjList)
 
-    t_authStr, t_authBornOn = createCMAuthStr(t_host, t_port, t_user, t_pass)
+    g_authStr, g_authBornOn = createCMAuthStr()
     
     for obj in range(t_ListLen):
         hostObjID    = t_ObjList[obj][CMAttributeType.ID.value]
@@ -163,8 +174,8 @@ def getHostObjData(t_host, t_port, t_ObjList, t_user, t_pass):
         # If the object is not exportable, then an error code will be returned.  So, check for exportability prior to
         # attempting to export the key material from the host.
 
-        t_hostRESTCmd = "https://%s:%s%s/%s" %(t_host, t_port, t_hostRESTAPI, hostObjID)
-        t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":t_authStr}
+        t_hostRESTCmd = "https://%s:%s%s/%s" %(g_cmHost, g_cmPort, t_hostRESTAPI, hostObjID)
+        t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":g_authStr}
 
         # Note that REST Command does not require a body object in this GET REST Command
         r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -183,14 +194,14 @@ def getHostObjData(t_host, t_port, t_ObjList, t_user, t_pass):
         t_ObjCnt += 1
 
         # Check to see if auth string needs to be refreshed
-        if isAuthStrRefreshNeeded(t_authBornOn):
-            t_authStr, t_authBornOn = createCMAuthStr(t_host, t_port, t_user, t_pass) # refresh
+        if isAuthStrRefreshNeeded(g_authBornOn):
+            g_authStr, g_authBornOn = createCMAuthStr(g_cmHost, g_cmPort, g_cmUser, g_cmPass) # refresh
             print(f"  --> Host Authorization Token Refreshed.  {t_ObjCnt} of {t_ListLen} Key Data Objects processed so far...")
 
     return t_hostObjDataList
 
 # -----------------------------------------------------------------------------
-def deleteCMKey(t_cmHost, t_cmPort, t_keyID, t_authStr):
+def deleteCMKey(t_keyID):
     # REST Assembly for deleting key from CM
     # -----------------------------------------------------------------------------
     HTTPS_SUCCESS_NOCONTENT = 204
@@ -198,8 +209,10 @@ def deleteCMKey(t_cmHost, t_cmPort, t_keyID, t_authStr):
 
     t_cmRESTAPI   = CM_REST_PREAMBLE + "vault/keys2/" + t_keyID
 
-    t_cmHostRESTCmd = "https://%s:%s%s" %(t_cmHost, t_cmPort, t_cmRESTAPI) 
-    t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":t_authStr}
+    g_authStr, g_authBornOn = createCMAuthStr()
+
+    t_cmHostRESTCmd = "https://%s:%s%s" %(g_cmHost, g_cmPort, t_cmRESTAPI) 
+    t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":g_authStr}
 
     # print(t_cmHostRESTCmd)
     # print(t_hostHeaders)
@@ -293,7 +306,7 @@ def isAuthStrRefreshNeeded(t_bornOn):
     return result
 
 
-def getHostLocalCAList(t_host, t_port, t_authStr):
+def getHostLocalCAList():
 # -----------------------------------------------------------------------------
 # REST Assembly for Collecting More detailed Host Key Info
 # 
@@ -309,14 +322,16 @@ def getHostLocalCAList(t_host, t_port, t_authStr):
     t_batchObjSkip          = t_batchLimit * t_batchSkip
     t_hostObjCnt            = 0
 
+    g_authStr, g_authBornOn = createCMAuthStr()
+
     # Define a common header for all REST API Requests
-    t_hostHeaders            = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization": t_authStr}
+    t_hostHeaders            = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization": g_authStr}
 
     # Process all keys per the size of the t_batchLimit until you have retrieved all of them.
     # Although this is the initial batch, use the same command structure as if multiple batch calls
     # may be required - for consistency.
     t_hostRESTCAList    = "%sca/local-cas/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
-    t_hostRESTCmd        = "https://%s:%s%s" %(t_host, t_port, t_hostRESTCAList)   
+    t_hostRESTCmd        = "https://%s:%s%s" %(g_cmHost, g_cmPort, t_hostRESTCAList)   
 
     # Note that this REST Command does not require a body object in this GET REST Command
     r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -340,7 +355,7 @@ def getHostLocalCAList(t_host, t_port, t_authStr):
         t_batchObjSkip          = t_batchLimit * t_batchSkip    # calculate number of objects to skip
 
         t_hostRESTCAList       = "%sca/local-cas/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
-        t_hostRESTCmd           = "https://%s:%s%s" %(t_host, t_port, t_hostRESTCAList)   
+        t_hostRESTCmd           = "https://%s:%s%s" %(g_cmHost, g_cmPort, t_hostRESTCAList)   
 
         # Note that this REST Command does not require a body object in this GET REST Command
         r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -359,10 +374,15 @@ def getHostLocalCAList(t_host, t_port, t_authStr):
         t_hostFinalObjList.extend(t_ObjList)
         t_hostObjCnt = len(t_hostFinalObjList)
 
+        # Check to see if auth string needs to be refreshed
+        if isAuthStrRefreshNeeded(g_authBornOn):
+            g_authStr, g_authBornOn = createCMAuthStr() # refresh
+            print(f"  --> Host Authorization Token Refreshed.  {t_hostObjCnt} of {t_hostObjTotalCnt} Local CA Data Objects processed so far...")
+
     # print("\n         host CA Objects: ",  t_hostFinalObjList[0].keys())
     return t_hostFinalObjList
 
-def getHostExternalCAList(t_host, t_port, t_authStr):
+def getHostExternalCAList():
 # -----------------------------------------------------------------------------
 # REST Assembly for Collecting More detailed Host Key Info
 # 
@@ -378,14 +398,16 @@ def getHostExternalCAList(t_host, t_port, t_authStr):
     t_batchObjSkip          = t_batchLimit * t_batchSkip
     t_hostObjCnt            = 0
 
+    g_authStr, g_authBornOn = createCMAuthStr()
+
     # Define a common header for all REST API Requests
-    t_hostHeaders            = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization": t_authStr}
+    t_hostHeaders            = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization": g_authStr}
 
     # Process all keys per the size of the t_batchLimit until you have retrieved all of them.
     # Although this is the initial batch, use the same command structure as if multiple batch calls
     # may be required - for consistency.
     t_hostRESTCAList    = "%sca/external-cas/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
-    t_hostRESTCmd        = "https://%s:%s%s" %(t_host, t_port, t_hostRESTCAList)   
+    t_hostRESTCmd        = "https://%s:%s%s" %(g_cmHost, g_cmPort, t_hostRESTCAList)   
 
     # Note that this REST Command does not require a body object in this GET REST Command
     r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -409,7 +431,7 @@ def getHostExternalCAList(t_host, t_port, t_authStr):
         t_batchObjSkip          = t_batchLimit * t_batchSkip    # calculate number of objects to skip
 
         t_hostRESTCAList       = "%sca/external-cas/?skip=%s&limit=%s" %(CM_REST_PREAMBLE, t_batchObjSkip, t_batchLimit)
-        t_hostRESTCmd           = "https://%s:%s%s" %(t_host, t_port, t_hostRESTCAList)   
+        t_hostRESTCmd           = "https://%s:%s%s" %(g_cmHost, g_cmPort, t_hostRESTCAList)   
 
         # Note that this REST Command does not require a body object in this GET REST Command
         r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -428,10 +450,15 @@ def getHostExternalCAList(t_host, t_port, t_authStr):
         t_hostFinalObjList.extend(t_ObjList)
         t_hostObjCnt = len(t_hostFinalObjList)
 
+        # Check to see if auth string needs to be refreshed
+        if isAuthStrRefreshNeeded(g_authBornOn):
+            g_authStr, g_authBornOn = createCMAuthStr() # refresh
+            print(f"  --> Host Authorization Token Refreshed.  {t_hostObjCnt} of {t_hostObjTotalCnt} External CA Data Objects processed so far...")
+
     # print("\n         host CA Objects: ",  t_hostFinalObjList[0].keys())
     return t_hostFinalObjList
 
-def getHostCertificateData(t_host, t_port, t_ObjList, t_user, t_pass):
+def getHostCertificateData(t_ObjList):
 # -----------------------------------------------------------------------------
 # REST Assembly for obtaining specific Object Data from CipherTrust
 #
@@ -445,7 +472,7 @@ def getHostCertificateData(t_host, t_port, t_ObjList, t_user, t_pass):
     t_FinalCertList         = []
     t_ObjCnt                = 0  # Initialize counter
 
-    t_authStr, t_authBornOn = createCMAuthStr(t_host, t_port, t_user, t_pass)
+    g_authStr, g_authBornOn = createCMAuthStr()
     
     for ca in range(t_ListLen):
         t_batchLimit            = 10    # 10 certs per retreival
@@ -454,8 +481,8 @@ def getHostCertificateData(t_host, t_port, t_ObjList, t_user, t_pass):
 
         hostCAID    = t_ObjList[ca][CMAttributeType.ID.value]
 
-        t_hostRESTCmd = "https://%s:%s%s/%s/certs?skip=%s&limit=%s" %(t_host, t_port, t_hostRESTAPI, hostCAID, t_batchObjSkip, t_batchLimit)
-        t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":t_authStr}
+        t_hostRESTCmd = "https://%s:%s%s/%s/certs?skip=%s&limit=%s" %(g_cmHost, g_cmPort, t_hostRESTAPI, hostCAID, t_batchObjSkip, t_batchLimit)
+        t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":g_authStr}
 
         # Note that REST Command does not require a body object in this GET REST Command
         r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -477,8 +504,8 @@ def getHostCertificateData(t_host, t_port, t_ObjList, t_user, t_pass):
             t_batchSkip             = t_batchSkip + 1               # iterate to next batch
             t_batchObjSkip          = t_batchLimit * t_batchSkip    # calculate number of objects to skip
 
-            t_hostRESTCmd = "https://%s:%s%s/%s/certs?skip=%s&limit=%s" %(t_host, t_port, t_hostRESTAPI, hostCAID, t_batchObjSkip, t_batchLimit)
-            t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":t_authStr}
+            t_hostRESTCmd = "https://%s:%s%s/%s/certs?skip=%s&limit=%s" %(g_cmHost, g_cmPort, t_hostRESTAPI, hostCAID, t_batchObjSkip, t_batchLimit)
+            t_hostHeaders = {"Content-Type":APP_JSON, "Accept":APP_JSON, "Authorization":g_authStr}
 
             # Note that REST Command does not require a body object in this GET REST Command
             r = requests.get(t_hostRESTCmd, headers=t_hostHeaders, verify=False)
@@ -497,8 +524,8 @@ def getHostCertificateData(t_host, t_port, t_ObjList, t_user, t_pass):
             #print(f"  -> Retrieved a total of {t_FinalCertListCnt} certificates for CA {hostCAID} out of a total of {t_TotalCACertCnt}.")
 
             # Check to see if auth string needs to be refreshed
-            if isAuthStrRefreshNeeded(t_authBornOn):
-                t_authStr, t_authBornOn = createCMAuthStr(t_host, t_port, t_user, t_pass) # refresh
-                print(f"  --> Host Authorization Token Refreshed.  {t_ObjCnt} of {t_ListLen} Certificate Data Objects processed so far...")
+            if isAuthStrRefreshNeeded(g_authBornOn):
+                g_authStr, g_authBornOn = createCMAuthStr() # refresh
+                print(f"  --> Host Authorization Token Refreshed.  {t_FinalCertListCnt} of {t_TotalCACertCnt} Certificate Data Objects processed so far...")
 
     return t_FinalCertList
