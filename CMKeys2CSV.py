@@ -75,8 +75,9 @@ print(tmpStr)
 # ---- MAIN MAIN MAIN ------------------------------------------------------------
 # ################################################################################
 
+print("\n ---- STARTING RETIEVAL ----")
 # Get Source and Destination Authorization Token/Strings
-print("\n Accessing Source and collecting Authorization Strings...")
+print("Accessing Source and collecting Authorization Strings...")
 
 CMKeys2CSV_REST.g_authStr, CMKeys2CSV_REST.g_authStrBornOn = createCMAuthStr()
 print("  * Host Access Confirmed *")
@@ -95,8 +96,6 @@ isKMIPKey       = False
 
 # Manipulate the list detailed keys so that the KMIP:custom information is shared at the highest level
 # This makes for easier importation into a CSV file
-print(f"\n  -> Key Data Objects Retrieval Complete.  Parsing {len(listofKeyDataObjects)} Key Data Objects...")
-
 for t_key in listofKeyDataObjects:
     isKMIPKey = False
     t_newKey = copy.deepcopy(t_key)
@@ -132,7 +131,7 @@ else:
     output_df.to_csv(keyFile, index=False)
     keyCount = len(listofAllKeys)
 
-print(f"\nMeta data for {keyCount} keys has been exported to: {keyFile}")
+print(f"\nMeta data for {keyCount} keys has been exported to: {keyFile}\n")
 
 # ################################################################################
 # ---- CERTIFICATE AND CA RETRIEVAL ------------------------------------------------
@@ -172,7 +171,7 @@ if len(certFile) > 0:
 
     print(f"\nCertificate and Meta data for {caCount} CAs and {certCount} Certificates has been exported to: {certFile}\n")
 
-
+print(" ---- RETIEVAL COMPLETE ----\n")
 
 
 
