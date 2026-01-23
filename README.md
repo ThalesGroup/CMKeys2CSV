@@ -4,7 +4,7 @@ This application reads the key information (not key material) from CipherTrust a
 
 Usage:
 
-**python CMKeys2CSV.py [-h] -host HOSTNAME [-port PORT] -user USERNAME -pass PASSWORD -out FILENAME [-KMIPONLY] [-certOut CERTFILENAME]** 
+**python CMKeys2CSV.py [-h] -host HOSTNAME [-port PORT] -user USERNAME -pass PASSWORD -out FILENAME [-KMIPONLY] [-certout CERTFILENAME]** 
 
 where:
 
